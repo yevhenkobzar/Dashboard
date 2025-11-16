@@ -25,7 +25,7 @@ function App() {
     }
   };
 
-  // Default positions
+   // Default positions - Starting fresh with only cash
   const defaultLiquidPositions = [
     {
       id: "cash-liquid",
@@ -38,52 +38,9 @@ function App() {
       note: "Available cash",
       isCash: true,
     },
-    {
-      id: 1,
-      symbol: "BTC",
-      name: "Bitcoin",
-      entryPrice: 28500,
-      currentPrice: 40500,
-      amount: 10.5,
-      invested: 299250,
-      note: "Long term hold",
-    },
-    {
-      id: 2,
-      symbol: "ETH",
-      name: "Ethereum",
-      entryPrice: 1850,
-      currentPrice: 2500,
-      amount: 85.0,
-      invested: 157250,
-      note: "DCA strategy",
-    },
-    {
-      id: 3,
-      symbol: "SOL",
-      name: "Solana",
-      entryPrice: 85,
-      currentPrice: 100,
-      amount: 425,
-      invested: 36125,
-      note: "",
-    },
   ];
 
-  const defaultLiquidHistory = [
-    {
-      id: 101,
-      symbol: "ADA",
-      name: "Cardano",
-      entryPrice: 0.45,
-      exitPrice: 0.58,
-      amount: 10000,
-      invested: 4500,
-      pnl: 1300,
-      note: "Quick profit",
-      closedDate: "2024-10-15",
-    },
-  ];
+  const defaultLiquidHistory = [];
 
   const defaultLiquid2Positions = [
     {
@@ -97,29 +54,10 @@ function App() {
       note: "Available cash",
       isCash: true,
     },
-    {
-      id: 4,
-      symbol: "ETH",
-      name: "Ethereum",
-      entryPrice: 1900,
-      currentPrice: 2500,
-      amount: 99.2,
-      invested: 188480,
-      note: "Staking pool",
-    },
-    {
-      id: 5,
-      symbol: "LINK",
-      name: "Chainlink",
-      entryPrice: 12.5,
-      currentPrice: 14.28,
-      amount: 4340,
-      invested: 54250,
-      note: "Oracle bet",
-    },
   ];
 
   const defaultLiquid2History = [];
+
 
   // LIQUID PORTFOLIO DATA with localStorage
   const [liquidPositions, setLiquidPositions] = useState(() =>
