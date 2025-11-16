@@ -29,7 +29,7 @@ const SYMBOL_TO_ID = {
   STX: "blockstack",
   ENA: "ethena",
   HYPE: "hyperliquid",
-  PUMP: "pump",
+  PUMP: "pump-fun",
   VIRTUAL: "virtual-protocol",
   XPL: "plasma",
   MNT: "mantle",
@@ -104,4 +104,5 @@ export const searchCoin = async (query) => {
     return [];
   }
 };
+
 
