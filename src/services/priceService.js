@@ -27,6 +27,12 @@ const SYMBOL_TO_ID = {
   INJ: "injective-protocol",
   SUI: "sui",
   STX: "blockstack",
+  ENA: "ethena",
+  HYPE: "hyperliquid",
+  PUMP: "pump",
+  VIRTUAL: "virtual-protocol",
+  XPL: "plasma",
+  MNT: "mantle",
 };
 
 // Get CoinGecko ID from symbol
@@ -98,3 +104,4 @@ export const searchCoin = async (query) => {
     return [];
   }
 };
+
