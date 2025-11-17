@@ -28,45 +28,67 @@ function App() {
   const [liquid2Positions, setLiquid2Positions] = useState([]);
   const [liquid2History, setLiquid2History] = useState([]);
 
-  // Convert DB format to frontend format
-  const convertPosition = (p) => ({
-    id: p.id,
-    symbol: p.symbol,
-    name: p.name,
-    entryPrice: parseFloat(p.entry_price),
-    currentPrice: parseFloat(p.current_price),
-    amount: parseFloat(p.amount),
-    invested: parseFloat(p.invested),
-    note: p.note,
-    isCash: p.is_cash,
-    change24h: p.change_24h ? parseFloat(p.change_24h) : 0,
-  });
+  // Convert DB format to frontend format with safety checks
+  const convertPosition = (p) => {
+    if (!p) return null;
 
-  const convertHistory = (h) => ({
-    id: h.id,
-    symbol: h.symbol,
-    name: h.name,
-    entryPrice: parseFloat(h.entry_price),
-    exitPrice: parseFloat(h.exit_price),
-    amount: parseFloat(h.amount),
-    invested: parseFloat(h.invested),
-    pnl: parseFloat(h.pnl),
-    note: h.note,
-    closedDate: h.closed_date,
-  });
+    return {
+      id: p.id,
+      symbol: p.symbol || "",
+      name: p.name || "",
+      entryPrice: p.entry_price ? parseFloat(p.entry_price) : 0,
+      currentPrice: p.current_price ? parseFloat(p.current_price) : 0,
+      amount: p.amount ? parseFloat(p.amount) : 0,
+      invested: p.invested ? parseFloat(p.invested) : 0,
+      note: p.note || "",
+      isCash: p.is_cash || false,
+      change24h: p.change_24h ? parseFloat(p.change_24h) : 0,
+    };
+  };
+
+  const convertHistory = (h) => {
+    if (!h) return null;
+
+    return {
+      id: h.id,
+      symbol: h.symbol || "",
+      name: h.name || "",
+      entryPrice: h.entry_price ? parseFloat(h.entry_price) : 0,
+      exitPrice: h.exit_price ? parseFloat(h.exit_price) : 0,
+      amount: h.amount ? parseFloat(h.amount) : 0,
+      invested: h.invested ? parseFloat(h.invested) : 0,
+      pnl: h.pnl ? parseFloat(h.pnl) : 0,
+      note: h.note || "",
+      closedDate: h.closed_date,
+    };
+  };
 
   // Load data from Supabase
   const loadPortfolioData = async () => {
     try {
+      console.log("Loading portfolio data...");
+
       const liquidPos = await fetchPositions("liquid");
       const liquidHist = await fetchHistory("liquid");
       const liquid2Pos = await fetchPositions("liquid2");
       const liquid2Hist = await fetchHistory("liquid2");
 
-      setLiquidPositions(liquidPos.map(convertPosition));
-      setLiquidHistory(liquidHist.map(convertHistory));
-      setLiquid2Positions(liquid2Pos.map(convertHistory));
-      setLiquid2History(liquid2Hist.map(convertHistory));
+      console.log("Loaded liquid positions:", liquidPos);
+      console.log("Loaded liquid2 positions:", liquid2Pos);
+
+      // Filter out any null values and convert
+      setLiquidPositions(
+        liquidPos.map(convertPosition).filter((p) => p !== null)
+      );
+      setLiquidHistory(
+        liquidHist.map(convertHistory).filter((h) => h !== null)
+      );
+      setLiquid2Positions(
+        liquid2Pos.map(convertPosition).filter((p) => p !== null)
+      );
+      setLiquid2History(
+        liquid2Hist.map(convertHistory).filter((h) => h !== null)
+      );
     } catch (error) {
       console.error("Error loading data:", error);
     }
@@ -77,6 +99,7 @@ function App() {
     const initData = async () => {
       setLoading(true);
       try {
+        console.log("Initializing portfolios...");
         await initializePortfolio("liquid");
         await initializePortfolio("liquid2");
         await loadPortfolioData();
@@ -92,9 +115,12 @@ function App() {
 
   // Calculate portfolio metrics from positions
   const calculateMetrics = (positions) => {
-    const totalInvested = positions.reduce((sum, p) => sum + p.invested, 0);
+    const totalInvested = positions.reduce(
+      (sum, p) => sum + (p.invested || 0),
+      0
+    );
     const currentValue = positions.reduce(
-      (sum, p) => sum + p.amount * p.currentPrice,
+      (sum, p) => sum + (p.amount || 0) * (p.currentPrice || 0),
       0
     );
     const totalGain = currentValue - totalInvested;
@@ -102,11 +128,14 @@ function App() {
       totalInvested > 0 ? (totalGain / totalInvested) * 100 : 0;
 
     const positionsWithReturns = positions.map((p) => ({
-      symbol: p.symbol,
+      symbol: p.symbol || "-",
       return: p.isCash
         ? 0
-        : ((p.currentPrice - p.entryPrice) / p.entryPrice) * 100,
+        : p.entryPrice > 0
+        ? ((p.currentPrice - p.entryPrice) / p.entryPrice) * 100
+        : 0,
     }));
+
     const bestPerformer = positionsWithReturns.reduce(
       (best, current) => (current.return > best.return ? current : best),
       { symbol: "-", return: 0 }
@@ -162,13 +191,13 @@ function App() {
   // Calculate allocation from positions
   const calculateAllocation = (positions) => {
     const totalValue = positions.reduce(
-      (sum, p) => sum + p.amount * p.currentPrice,
+      (sum, p) => sum + (p.amount || 0) * (p.currentPrice || 0),
       0
     );
     if (totalValue === 0) return [];
 
     const grouped = positions.reduce((acc, p) => {
-      const value = p.amount * p.currentPrice;
+      const value = (p.amount || 0) * (p.currentPrice || 0);
       if (acc[p.symbol]) {
         acc[p.symbol] += value;
       } else {
@@ -214,7 +243,8 @@ function App() {
 
   // Add position handler
   const handleAddPosition = async (newPosition, portfolio) => {
-    const investmentAmount = newPosition.entryPrice * newPosition.amount;
+    const investmentAmount =
+      parseFloat(newPosition.entryPrice) * parseFloat(newPosition.amount);
 
     const position = {
       ...newPosition,
@@ -223,6 +253,8 @@ function App() {
     };
 
     try {
+      console.log("Adding position:", position, "to portfolio:", portfolio);
+
       await dbAddPosition(position, portfolio);
 
       const positions =
@@ -230,9 +262,13 @@ function App() {
       const cashPosition = positions.find((p) => p.isCash);
 
       if (cashPosition) {
+        const newAmount = parseFloat(cashPosition.amount) - investmentAmount;
+        const newInvested =
+          parseFloat(cashPosition.invested) - investmentAmount;
+
         await updatePosition(cashPosition.id, {
-          amount: cashPosition.amount - investmentAmount,
-          invested: cashPosition.invested - investmentAmount,
+          amount: newAmount,
+          invested: newInvested,
         });
       }
 
@@ -246,60 +282,101 @@ function App() {
   // Add cash handler
   const handleAddCash = async (amount, portfolio) => {
     try {
+      console.log("Adding cash:", amount, "to portfolio:", portfolio);
+
       const positions =
         portfolio === "liquid" ? liquidPositions : liquid2Positions;
       const cashPosition = positions.find((p) => p.isCash);
 
-      if (cashPosition) {
-        await updatePosition(cashPosition.id, {
-          amount: cashPosition.amount + amount,
-          invested: cashPosition.invested + amount,
-        });
+      if (!cashPosition) {
+        console.error("Cash position not found!");
+        alert("Error: Cash position not found. Try refreshing the page.");
+        return;
       }
 
+      console.log("Current cash position:", cashPosition);
+
+      const newAmount =
+        parseFloat(cashPosition.amount || 0) + parseFloat(amount);
+      const newInvested =
+        parseFloat(cashPosition.invested || 0) + parseFloat(amount);
+
+      console.log("Updating to:", { newAmount, newInvested });
+
+      await updatePosition(cashPosition.id, {
+        amount: newAmount,
+        invested: newInvested,
+      });
+
       await loadPortfolioData();
+      console.log("Cash added successfully!");
     } catch (error) {
-      alert("Error adding cash. Please try again.");
-      console.error(error);
+      console.error("Error adding cash:", error);
+      alert("Error adding cash. Please check console for details.");
     }
   };
 
   // Remove cash handler
   const handleRemoveCash = async (amount, portfolio) => {
     try {
+      console.log("Removing cash:", amount, "from portfolio:", portfolio);
+
       const positions =
         portfolio === "liquid" ? liquidPositions : liquid2Positions;
       const cashPosition = positions.find((p) => p.isCash);
 
-      if (cashPosition) {
-        await updatePosition(cashPosition.id, {
-          amount: cashPosition.amount - amount,
-          invested: cashPosition.invested - amount,
-        });
+      if (!cashPosition) {
+        console.error("Cash position not found!");
+        alert("Error: Cash position not found. Try refreshing the page.");
+        return;
       }
+
+      const newAmount =
+        parseFloat(cashPosition.amount || 0) - parseFloat(amount);
+      const newInvested =
+        parseFloat(cashPosition.invested || 0) - parseFloat(amount);
+
+      await updatePosition(cashPosition.id, {
+        amount: newAmount,
+        invested: newInvested,
+      });
 
       await loadPortfolioData();
     } catch (error) {
-      alert("Error removing cash. Please try again.");
-      console.error(error);
+      console.error("Error removing cash:", error);
+      alert("Error removing cash. Please check console for details.");
     }
   };
 
   // Close position handler
   const handleClosePosition = async (positionId, portfolio) => {
     try {
+      console.log(
+        "Closing position:",
+        positionId,
+        "from portfolio:",
+        portfolio
+      );
+
       const positions =
         portfolio === "liquid" ? liquidPositions : liquid2Positions;
       const position = positions.find((p) => p.id === positionId);
 
       if (position) {
-        const exitValue = position.amount * position.currentPrice;
+        const exitValue =
+          parseFloat(position.amount || 0) *
+          parseFloat(position.currentPrice || 0);
         const closedPosition = {
           ...position,
           exitPrice: position.currentPrice,
-          pnl: (position.currentPrice - position.entryPrice) * position.amount,
+          pnl:
+            (parseFloat(position.currentPrice || 0) -
+              parseFloat(position.entryPrice || 0)) *
+            parseFloat(position.amount || 0),
           closedDate: new Date().toISOString().split("T")[0],
         };
+
+        console.log("Closed position details:", closedPosition);
 
         // Add to history
         await addToHistory(closedPosition, portfolio);
@@ -310,9 +387,13 @@ function App() {
         // Update cash
         const cashPosition = positions.find((p) => p.isCash);
         if (cashPosition) {
+          const newAmount = parseFloat(cashPosition.amount || 0) + exitValue;
+          const newInvested =
+            parseFloat(cashPosition.invested || 0) + exitValue;
+
           await updatePosition(cashPosition.id, {
-            amount: cashPosition.amount + exitValue,
-            invested: cashPosition.invested + exitValue,
+            amount: newAmount,
+            invested: newInvested,
           });
         }
 
@@ -327,6 +408,8 @@ function App() {
   // Price update handler
   const handlePricesUpdate = async (prices) => {
     try {
+      console.log("Updating prices:", prices);
+
       // Update liquid positions
       for (const position of liquidPositions) {
         if (position.isCash) continue;
@@ -334,8 +417,8 @@ function App() {
         const priceData = prices[position.symbol];
         if (priceData) {
           await updatePosition(position.id, {
-            currentPrice: priceData.price,
-            change24h: priceData.change24h,
+            currentPrice: parseFloat(priceData.price),
+            change24h: parseFloat(priceData.change24h),
           });
         }
       }
@@ -347,8 +430,8 @@ function App() {
         const priceData = prices[position.symbol];
         if (priceData) {
           await updatePosition(position.id, {
-            currentPrice: priceData.price,
-            change24h: priceData.change24h,
+            currentPrice: parseFloat(priceData.price),
+            change24h: parseFloat(priceData.change24h),
           });
         }
       }
@@ -403,7 +486,7 @@ function App() {
         )
       ) {
         try {
-          // Delete all positions
+          // Delete all positions except cash
           for (const pos of liquidPositions) {
             if (!pos.isCash) await deletePosition(pos.id);
           }
