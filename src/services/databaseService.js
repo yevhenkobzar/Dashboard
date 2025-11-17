@@ -33,21 +33,24 @@ export const fetchHistory = async (portfolio) => {
 
 // Add a new position
 export const addPosition = async (position, portfolio) => {
-  const { data, error } = await supabase.from("positions").insert([
-    {
-      id: position.id,
-      portfolio: portfolio,
-      symbol: position.symbol,
-      name: position.name,
-      entry_price: position.entryPrice,
-      current_price: position.currentPrice,
-      amount: position.amount,
-      invested: position.invested,
-      note: position.note || "",
-      is_cash: position.isCash || false,
-      change_24h: position.change24h || 0,
-    },
-  ]);
+  const { data, error } = await supabase
+    .from("positions")
+    .insert([
+      {
+        id: position.id,
+        portfolio: portfolio,
+        symbol: position.symbol,
+        name: position.name,
+        entry_price: parseFloat(position.entryPrice),
+        current_price: parseFloat(position.currentPrice),
+        amount: parseFloat(position.amount),
+        invested: parseFloat(position.invested),
+        note: position.note || "",
+        is_cash: position.isCash || false,
+        change_24h: position.change24h ? parseFloat(position.change24h) : 0,
+      },
+    ])
+    .select();
 
   if (error) {
     console.error("Error adding position:", error);
@@ -61,15 +64,19 @@ export const addPosition = async (position, portfolio) => {
 export const updatePosition = async (positionId, updates) => {
   const dbUpdates = {};
   if (updates.currentPrice !== undefined)
-    dbUpdates.current_price = updates.currentPrice;
-  if (updates.change24h !== undefined) dbUpdates.change_24h = updates.change24h;
-  if (updates.amount !== undefined) dbUpdates.amount = updates.amount;
-  if (updates.invested !== undefined) dbUpdates.invested = updates.invested;
+    dbUpdates.current_price = parseFloat(updates.currentPrice);
+  if (updates.change24h !== undefined)
+    dbUpdates.change_24h = parseFloat(updates.change24h);
+  if (updates.amount !== undefined)
+    dbUpdates.amount = parseFloat(updates.amount);
+  if (updates.invested !== undefined)
+    dbUpdates.invested = parseFloat(updates.invested);
 
   const { data, error } = await supabase
     .from("positions")
     .update(dbUpdates)
-    .eq("id", positionId);
+    .eq("id", positionId)
+    .select();
 
   if (error) {
     console.error("Error updating position:", error);
@@ -94,21 +101,24 @@ export const deletePosition = async (positionId) => {
 
 // Add to history
 export const addToHistory = async (position, portfolio) => {
-  const { data, error } = await supabase.from("position_history").insert([
-    {
-      id: position.id,
-      portfolio: portfolio,
-      symbol: position.symbol,
-      name: position.name,
-      entry_price: position.entryPrice,
-      exit_price: position.exitPrice,
-      amount: position.amount,
-      invested: position.invested,
-      pnl: position.pnl,
-      note: position.note || "",
-      closed_date: position.closedDate,
-    },
-  ]);
+  const { data, error } = await supabase
+    .from("position_history")
+    .insert([
+      {
+        id: position.id.toString(),
+        portfolio: portfolio,
+        symbol: position.symbol,
+        name: position.name,
+        entry_price: parseFloat(position.entryPrice),
+        exit_price: parseFloat(position.exitPrice),
+        amount: parseFloat(position.amount),
+        invested: parseFloat(position.invested),
+        pnl: parseFloat(position.pnl),
+        note: position.note || "",
+        closed_date: position.closedDate,
+      },
+    ])
+    .select();
 
   if (error) {
     console.error("Error adding to history:", error);
