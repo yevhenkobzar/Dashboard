@@ -25,7 +25,7 @@ function App() {
     }
   };
 
-   // Default positions - Starting fresh with only cash
+  // Default positions - Starting fresh with only cash
   const defaultLiquidPositions = [
     {
       id: "cash-liquid",
@@ -57,7 +57,6 @@ function App() {
   ];
 
   const defaultLiquid2History = [];
-
 
   // LIQUID PORTFOLIO DATA with localStorage
   const [liquidPositions, setLiquidPositions] = useState(() =>
@@ -297,6 +296,34 @@ function App() {
             ...p,
             amount: p.amount + amount,
             invested: p.invested + amount,
+          };
+        }
+        return p;
+      });
+      setLiquid2Positions(updatedPositions);
+    }
+  };
+
+  const handleRemoveCash = (amount, portfolio) => {
+    if (portfolio === "liquid") {
+      const updatedPositions = liquidPositions.map((p) => {
+        if (p.isCash) {
+          return {
+            ...p,
+            amount: p.amount - amount,
+            invested: p.invested - amount,
+          };
+        }
+        return p;
+      });
+      setLiquidPositions(updatedPositions);
+    } else {
+      const updatedPositions = liquid2Positions.map((p) => {
+        if (p.isCash) {
+          return {
+            ...p,
+            amount: p.amount - amount,
+            invested: p.invested - amount,
           };
         }
         return p;
@@ -613,6 +640,9 @@ function App() {
               handleAddPosition(position, currentData.portfolio)
             }
             onAddCash={(amount) => handleAddCash(amount, currentData.portfolio)}
+            onRemoveCash={(amount) =>
+              handleRemoveCash(amount, currentData.portfolio)
+            }
             availableCash={
               currentData.positions.find((p) => p.isCash)?.amount || 0
             }
