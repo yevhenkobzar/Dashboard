@@ -1,9 +1,16 @@
 import React, { useState } from "react";
-import { PlusCircle, DollarSign } from "lucide-react";
+import { PlusCircle, DollarSign, MinusCircle } from "lucide-react";
 
-const AddPositionForm = ({ onAddPosition, onAddCash, availableCash }) => {
+const AddPositionForm = ({
+  onAddPosition,
+  onAddCash,
+  onRemoveCash,
+  availableCash,
+}) => {
   const [showCashModal, setShowCashModal] = useState(false);
+  const [showRemoveCashModal, setShowRemoveCashModal] = useState(false);
   const [cashAmount, setCashAmount] = useState("");
+  const [removeCashAmount, setRemoveCashAmount] = useState("");
 
   const [formData, setFormData] = useState({
     symbol: "",
@@ -72,6 +79,27 @@ const AddPositionForm = ({ onAddPosition, onAddCash, availableCash }) => {
     setShowCashModal(false);
   };
 
+  const handleRemoveCash = () => {
+    const amount = parseFloat(removeCashAmount);
+    if (!amount || amount <= 0) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    if (amount > availableCash) {
+      alert(
+        `Cannot remove $${amount.toFixed(2)}. Only $${availableCash.toFixed(
+          2
+        )} available.`
+      );
+      return;
+    }
+
+    onRemoveCash(amount);
+    setRemoveCashAmount("");
+    setShowRemoveCashModal(false);
+  };
+
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -133,6 +161,14 @@ const AddPositionForm = ({ onAddPosition, onAddCash, availableCash }) => {
           >
             <DollarSign size={18} />
             Add Cash
+          </button>
+          <button
+            type="button"
+            className="btn-remove-cash"
+            onClick={() => setShowRemoveCashModal(true)}
+          >
+            <MinusCircle size={18} />
+            Remove Cash
           </button>
         </div>
       </div>
@@ -292,6 +328,96 @@ const AddPositionForm = ({ onAddPosition, onAddCash, availableCash }) => {
               >
                 <DollarSign size={18} />
                 Add Cash
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Remove Cash Modal */}
+      {showRemoveCashModal && (
+        <div
+          className="modal-overlay"
+          onClick={() => setShowRemoveCashModal(false)}
+        >
+          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+            <h3
+              style={{
+                color: "white",
+                marginBottom: "20px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              <MinusCircle size={24} color="#ef4444" />
+              Remove Cash from Portfolio
+            </h3>
+            <div
+              style={{
+                background: "rgba(239, 68, 68, 0.1)",
+                border: "1px solid rgba(239, 68, 68, 0.3)",
+                borderRadius: "8px",
+                padding: "12px",
+                marginBottom: "20px",
+              }}
+            >
+              <div
+                style={{
+                  color: "#94a3b8",
+                  fontSize: "12px",
+                  marginBottom: "4px",
+                }}
+              >
+                Available Cash
+              </div>
+              <div
+                style={{
+                  color: "#10b981",
+                  fontSize: "18px",
+                  fontWeight: "bold",
+                }}
+              >
+                ${availableCash.toFixed(2)}
+              </div>
+            </div>
+            <div className="form-group" style={{ marginBottom: "20px" }}>
+              <label>Amount to Remove (USD)</label>
+              <input
+                type="number"
+                value={removeCashAmount}
+                onChange={(e) => setRemoveCashAmount(e.target.value)}
+                placeholder="5000"
+                step="0.01"
+                min="0.01"
+                max={availableCash}
+                autoFocus
+              />
+            </div>
+            <div
+              style={{
+                display: "flex",
+                gap: "12px",
+                justifyContent: "flex-end",
+              }}
+            >
+              <button
+                type="button"
+                className="btn-secondary"
+                onClick={() => {
+                  setShowRemoveCashModal(false);
+                  setRemoveCashAmount("");
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="btn-danger-solid"
+                onClick={handleRemoveCash}
+              >
+                <MinusCircle size={18} />
+                Remove Cash
               </button>
             </div>
           </div>
