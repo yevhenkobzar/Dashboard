@@ -2,11 +2,22 @@ import React from "react";
 import { X } from "lucide-react";
 
 const HoldingsTable = ({ data, onClosePosition }) => {
-  const formatCurrency = (value) => {
+  const formatCurrency = (value, isPrice = false) => {
+    // For crypto prices, show more decimals if needed
+    if (isPrice && value < 1) {
+      // For prices under $1, show up to 8 decimals (remove trailing zeros)
+      return "$" + parseFloat(value.toFixed(8)).toString();
+    } else if (isPrice && value < 100) {
+      // For prices under $100, show up to 5 decimals
+      return "$" + parseFloat(value.toFixed(5)).toString();
+    }
+
+    // For larger amounts and invested values, use standard 2 decimals
     return new Intl.NumberFormat("en-US", {
       style: "currency",
       currency: "USD",
       minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
     }).format(value);
   };
 
@@ -101,12 +112,12 @@ const HoldingsTable = ({ data, onClosePosition }) => {
                     <td className="text-right">
                       {position.isCash
                         ? "-"
-                        : formatCurrency(position.entryPrice)}
+                        : formatCurrency(position.entryPrice, true)}
                     </td>
                     <td className="text-right">
                       {position.isCash
                         ? "-"
-                        : formatCurrency(position.currentPrice)}
+                        : formatCurrency(position.currentPrice, true)}
                     </td>
                     <td className="text-right">
                       {position.isCash || !position.change24h ? (
